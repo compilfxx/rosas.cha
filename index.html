@@ -1680,6 +1680,39 @@
         lastTouch = now;
       }, { passive: false });
 
+      // Play/pause on click anywhere in the document (desktop):
+      document.addEventListener('click', function (e) {
+        // ignore clicks inside the audio player controls (if visible)
+        if (e.target && e.target.closest && e.target.closest('#audio-player')) return;
+        if (!audioReady) {
+          audio.load();
+          audioReady = true;
+        }
+        if (audio.paused) {
+          audio.play().catch(() => { /* ignore play failures */ });
+        } else {
+          audio.pause();
+        }
+        updateButton();
+      });
+
+      // Use the Media Session API so the browser/OS can show native controls (lock-screen, notification)
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'chachacha',
+            artist: '',
+            album: ''
+          });
+          navigator.mediaSession.setActionHandler('play', function() { audio.play(); updateButton(); });
+          navigator.mediaSession.setActionHandler('pause', function() { audio.pause(); updateButton(); });
+          navigator.mediaSession.setActionHandler('seekbackward', null);
+          navigator.mediaSession.setActionHandler('seekforward', null);
+        } catch (err) {
+          // ignore if browser doesn't fully support
+        }
+      }
+
       updateButton();
     };
   </script>
