@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Flor Animada</title>
   <style>
     *,
@@ -25,6 +26,8 @@
       background-color: var(--dark-color);
       overflow: hidden;
       perspective: 1000px;
+      touch-action: manipulation;
+      -ms-touch-action: manipulation;
     }
 
     .night {
@@ -1249,12 +1252,13 @@
     .audio-player input[type="range"] {
       width: 12vmin;
       accent-color: #23f0ff;
+      appearance: none;
       -webkit-appearance: none;
       background: transparent;
     }
 
     @media (max-width: 640px) {
-      .flowers { transform: scale(0.95); }
+      .flowers { transform: scale(1.08); }
       body { align-items: center; }
       .audio-player { gap: 0.6rem; padding: 0.5rem; bottom: 3vmin; }
       .audio-player .label { display: none; }
@@ -1640,6 +1644,17 @@
 
       // Label update (if you want to show nicer text later)
       title.textContent = title.textContent || 'chachacha.mp3';
+
+      // Prevent double-tap to zoom on mobile by intercepting rapid touchend events
+      let lastTouch = 0;
+      document.addEventListener('touchend', function (e) {
+        const now = Date.now();
+        if (now - lastTouch <= 300) {
+          // prevent default zoom when user double-taps quickly
+          e.preventDefault();
+        }
+        lastTouch = now;
+      }, { passive: false });
 
       updateButton();
     };
