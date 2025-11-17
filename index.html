@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Flor Animada</title>
   <style>
     *,
@@ -44,6 +44,10 @@
     .flowers {
       position: relative;
       transform: scale(0.7);
+      transform-origin: center bottom;
+      max-width: 100vw;
+      max-height: 86vh;
+      display: block;
     }
 
     .flower {
@@ -1209,21 +1213,31 @@
     }
     /* ===== Audio player + mobile optimizations ===== */
     .audio-player {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 2vmin;
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      padding: 0.6rem 0.8rem;
-      background: rgba(0,0,0,0.45);
-      color: #fff;
-      border-radius: 1rem;
-      backdrop-filter: blur(4px);
-      z-index: 9999;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      /* visually hide the player so the scene is centered on screen
+         but keep it in the DOM for accessibility and keyboard users */
+      position: absolute !important;
+      left: -9999px !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      clip: rect(0 0 0 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+      padding: 0 !important;
       touch-action: manipulation;
+    }
+
+    /* Utility for accessible-only content (screen readers) */
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0 0 0 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
     }
 
     .audio-player button {
@@ -1258,8 +1272,9 @@
     }
 
     @media (max-width: 640px) {
-      .flowers { transform: scale(1.08); }
-      body { align-items: center; }
+      /* Reduce feel of zoom while keeping scene large and centered */
+      .flowers { transform: scale(0.95) translateY(6vmin); }
+      body { align-items: center; justify-content: center; }
       .audio-player { gap: 0.6rem; padding: 0.5rem; bottom: 3vmin; }
       .audio-player .label { display: none; }
       .audio-player input[type="range"] { width: 9vmin; }
@@ -1624,13 +1639,22 @@
       audio.addEventListener('pause', updateButton);
       audio.addEventListener('volumechange', () => { vol.value = audio.volume; });
 
-      // On touch devices, allow a first touch to prepare audio without autoplay
-      function onFirstTouch() {
-        if (!audioReady) {
-          audio.load();
-          audioReady = true;
+      // On touch devices, play audio on the first tap anywhere (except over the player controls)
+      function onFirstTouch(e) {
+        try {
+          // If user tapped inside the controls, let the control handle it
+          if (e && e.target && e.target.closest && e.target.closest('#audio-player')) return;
+          if (!audioReady) {
+            audio.load();
+            audioReady = true;
+          }
+          if (audio.paused) {
+            audio.play().catch(() => { /* play may still fail on some browsers */ });
+          }
+          updateButton();
+        } finally {
+          try { document.removeEventListener('touchstart', onFirstTouch); } catch (err) { }
         }
-        document.removeEventListener('touchstart', onFirstTouch, { passive: true });
       }
       document.addEventListener('touchstart', onFirstTouch, { passive: true });
 
